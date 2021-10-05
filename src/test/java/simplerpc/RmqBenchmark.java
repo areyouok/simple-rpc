@@ -87,17 +87,17 @@ public class RmqBenchmark extends BenchBase {
         req.setBody(data);
         try {
             // 同步调用
-            client.invokeSync("127.0.0.1:8888", req, 3000);
-            successCount.add(1);
+//            client.invokeSync("127.0.0.1:8888", req, 3000);
+//            successCount.add(1);
 
             // 异步调用
-//            client.invokeAsync("127.0.0.1:8888", req, 3000, responseFuture -> {
-//                if (responseFuture.isSendRequestOK()) {
-//                    successCount.add(1);
-//                } else {
-//                    failCount.add(1);
-//                }
-//            });
+            client.invokeAsync("127.0.0.1:8888", req, 3000, responseFuture -> {
+                if (responseFuture.isSendRequestOK()) {
+                    successCount.add(1);
+                } else {
+                    failCount.add(1);
+                }
+            });
         } catch (Exception e) {
             e.printStackTrace();
             failCount.add(1);
@@ -105,6 +105,6 @@ public class RmqBenchmark extends BenchBase {
     }
 
     public static void main(String[] args) throws Exception {
-        new RmqBenchmark(64, 10000).start();
+        new RmqBenchmark(128, 10000).start();
     }
 }

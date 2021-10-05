@@ -13,7 +13,7 @@ public class NettyTcpClientConfig {
     private int workLoopThread = 1;
 
     private int maxBatchSize = 100;
-    private float autoBatchFactor = 0.1f;
+    private float autoBatchFactor = 0.2f;
     private long maxAutoBatchPendingNanos = 1000 * 1000; // 1毫秒
 
     private int maxFrameSize = 2 * 1024 * 1024;

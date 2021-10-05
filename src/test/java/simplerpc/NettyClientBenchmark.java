@@ -71,6 +71,7 @@ public class NettyClientBenchmark extends BenchBase {
                 }
             }, 3500);
 
+            // 同步调用
 //            try {
 //                fu.get();
 //                successCount.add(1);
@@ -78,6 +79,7 @@ public class NettyClientBenchmark extends BenchBase {
 //                failCount.add(1);
 //            }
 
+            // 异步调用
             fu.handle((unused, throwable) -> {
                 if (throwable != null) {
                     failCount.add(1);
@@ -90,6 +92,6 @@ public class NettyClientBenchmark extends BenchBase {
     }
 
     public static void main(String[] args) throws Exception {
-        new NettyClientBenchmark(64, 10000).start();
+        new NettyClientBenchmark(128, 10000).start();
     }
 }
