@@ -24,7 +24,7 @@ public class ClientStarter extends BenchBase {
     private static CommandLine commandLine;
     private static boolean sync;
 
-    private final int clientCount = 1;
+    private static int clientCount = 1;
     private NettyTcpClient[] client;
     private static byte[] DATA = "hello".getBytes(StandardCharsets.UTF_8);
 
@@ -118,6 +118,8 @@ public class ClientStarter extends BenchBase {
         options.addOption(null, "maxBatchSize", true, "maxBatchSize");
         options.addOption(null, "maxPending", true, "maxPending");
         options.addOption("l", "length", true, "message size");
+        options.addOption("c", "client", true, "client count");
+
 
         DefaultParser parser = new DefaultParser();
         commandLine = parser.parse(options, args, true);
@@ -127,6 +129,9 @@ public class ClientStarter extends BenchBase {
             byte[] b = new byte[Integer.parseInt(commandLine.getOptionValue("s"))];
             new Random().nextBytes(b);
             DATA = b;
+        }
+        if (commandLine.hasOption('c')) {
+            clientCount = Integer.parseInt(commandLine.getOptionValue('c'));
         }
 
         int thread = Integer.parseInt(commandLine.getOptionValue('t', "1"));
