@@ -1,4 +1,4 @@
-package simplerpc;
+package simplerpc.benchmark;
 
 import java.text.DecimalFormat;
 import java.util.concurrent.atomic.LongAdder;

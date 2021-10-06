@@ -1,39 +1,31 @@
-package simplerpc;
+package simplerpc.benchmark;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 
-import org.junit.jupiter.api.Assertions;
-
 import io.netty.buffer.ByteBuf;
+import simplerpc.Commands;
+import simplerpc.NettyTcpClient;
 import simplerpc.NettyTcpClient.Callback;
-import simplerpc.benchmark.BenchBase;
+import simplerpc.NettyTcpClientConfig;
 
 /**
  * @author huangli
- * Created on 2021-09-14
+ * Created on 2021-10-06
  */
-public class NettyClientBenchmark extends BenchBase {
+public class ClientStarter extends BenchBase {
 
     private final int clientCount = 1;
-    private NettyServer server;
     private NettyTcpClient[] client;
     private final static byte[] DATA = "hello".getBytes(StandardCharsets.UTF_8);
 
-    public NettyClientBenchmark(int threadCount, int time) {
+    public ClientStarter(int threadCount, int time) {
         super(threadCount, time);
     }
 
     @Override
     public void init() throws Exception {
-        NettyServerConfig config = new NettyServerConfig();
-        config.setPort(12345);
-        config.setAutoBatchMode(AutoBatchMode.MODE_AUTO);
-        // config.setBizThreads(0);
-        server = new NettyServer(config);
-
-        server.start();
         client = new NettyTcpClient[clientCount];
         for (int i = 0; i < clientCount; i++) {
             NettyTcpClientConfig c = new NettyTcpClientConfig();
@@ -47,7 +39,6 @@ public class NettyClientBenchmark extends BenchBase {
         for (int i = 0; i < clientCount; i++) {
             client[i].close();
         }
-        server.shutdown();
     }
 
     @Override
@@ -67,18 +58,17 @@ public class NettyClientBenchmark extends BenchBase {
                     }
                     byte[] bs = new byte[DATA.length];
                     in.readBytes(bs);
-                    Assertions.assertArrayEquals(DATA, bs);
                     return null;
                 }
             }, 3500);
 
             // 同步调用
-//            try {
-//                fu.get();
-//                successCount.add(1);
-//            } catch (Exception e) {
-//                failCount.add(1);
-//            }
+            //            try {
+            //                fu.get();
+            //                successCount.add(1);
+            //            } catch (Exception e) {
+            //                failCount.add(1);
+            //            }
 
             // 异步调用
             fu.handle((unused, throwable) -> {
@@ -93,6 +83,6 @@ public class NettyClientBenchmark extends BenchBase {
     }
 
     public static void main(String[] args) throws Exception {
-        new NettyClientBenchmark(128, 10000).start();
+        new ClientStarter(1, 10000).start();
     }
 }

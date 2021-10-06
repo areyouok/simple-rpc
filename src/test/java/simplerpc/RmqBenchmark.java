@@ -13,6 +13,7 @@ import org.apache.rocketmq.remoting.netty.NettyServerConfig;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
 import io.netty.channel.ChannelHandlerContext;
+import simplerpc.benchmark.BenchBase;
 
 /**
  * @author huangli
