@@ -16,6 +16,9 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -31,8 +34,8 @@ public class NettyServer {
     private static final Logger logger = LoggerFactory.getLogger(NettyServer.class);
     private final NettyServerConfig config;
 
-    private NioEventLoopGroup eventLoopGroupBoss;
-    private NioEventLoopGroup eventLoopGroupSelector;
+    private EventLoopGroup eventLoopGroupBoss;
+    private EventLoopGroup eventLoopGroupSelector;
     private DefaultEventExecutorGroup bizExecutorGroup;
 
     // 这个注入
@@ -53,37 +56,22 @@ public class NettyServer {
 
     public void start() throws Exception {
         ServerBootstrap serverBootstrap = new ServerBootstrap();
-        this.eventLoopGroupBoss = new NioEventLoopGroup(1, new ThreadFactory() {
-            private final AtomicInteger threadIndex = new AtomicInteger(0);
-
-            @Override
-            public Thread newThread(Runnable r) {
-                return new Thread(r, String.format("ServerNIOBoss_%d", this.threadIndex.incrementAndGet()));
-            }
-        });
-
-        this.eventLoopGroupSelector = new NioEventLoopGroup(config.getIoThreads(), new ThreadFactory() {
-            private final AtomicInteger threadIndex = new AtomicInteger(0);
-
-            @Override
-            public Thread newThread(Runnable r) {
-                return new Thread(r, String.format("ServerNIOSelector_%d", this.threadIndex.incrementAndGet()));
-            }
-        });
+        if (config.isEpoll()) {
+            this.eventLoopGroupBoss = new EpollEventLoopGroup(1, new IndexThreadFactory("ServerBoss"));
+            this.eventLoopGroupSelector =
+                    new EpollEventLoopGroup(config.getIoThreads(), new IndexThreadFactory("ServerSelector"));
+        } else {
+            this.eventLoopGroupBoss = new NioEventLoopGroup(1, new IndexThreadFactory("ServerBoss"));
+            this.eventLoopGroupSelector =
+                    new NioEventLoopGroup(config.getIoThreads(), new IndexThreadFactory("ServerSelector"));
+        }
 
         if (config.getBizThreads() > 0) {
-            this.bizExecutorGroup = new DefaultEventExecutorGroup(config.getBizThreads(), new ThreadFactory() {
-                private final AtomicInteger threadIndex = new AtomicInteger(0);
-
-                @Override
-                public Thread newThread(Runnable r) {
-                    return new Thread(r, "ServerBizThread_" + this.threadIndex.incrementAndGet());
-                }
-            });
+            this.bizExecutorGroup = new DefaultEventExecutorGroup(config.getBizThreads(), new IndexThreadFactory("ServerBiz"));
         }
 
         serverBootstrap.group(this.eventLoopGroupBoss, this.eventLoopGroupSelector)
-                .channel(NioServerSocketChannel.class)
+                .channel(config.isEpoll() ? EpollServerSocketChannel.class : NioServerSocketChannel.class)
                 .option(ChannelOption.SO_REUSEADDR, true)
                 .childOption(ChannelOption.SO_KEEPALIVE, false)
                 .childOption(ChannelOption.TCP_NODELAY, true)

@@ -48,6 +48,9 @@ public class ClientStarter extends BenchBase {
             if (commandLine.hasOption("maxPending")) {
                 c.setMaxPending(Integer.parseInt(commandLine.getOptionValue("maxPending")));
             }
+            if (commandLine.hasOption('e')) {
+                c.setEpoll(true);
+            }
             client[i] = new NettyTcpClient(() -> Collections.singletonList(host + ":" + port), c);
             client[i].start();
         }
@@ -105,6 +108,7 @@ public class ClientStarter extends BenchBase {
 
     public static void main(String[] args) throws Exception {
         Options options = new Options();
+        options.addOption("e", "epoll", false, "use epoll");
         options.addOption("h", "host", true, "server ip");
         options.addOption("p", "port", true, "port");
         options.addOption("d", "duration", true, "test time in millis");

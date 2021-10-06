@@ -15,6 +15,7 @@ import simplerpc.NettyServerConfig;
 public class ServerStarter {
     public static void main(String[] args) throws Exception {
         Options options = new Options();
+        options.addOption("e", "epoll", false, "use epoll");
         options.addOption("p", "port", true, "port");
         options.addOption("m", "mode", true, "auto batch mode");
         options.addOption("t", "bizThreads", true, "biz thread count");
@@ -37,6 +38,9 @@ public class ServerStarter {
             }
         } else {
             config.setAutoBatchMode(AutoBatchMode.MODE_AUTO);
+        }
+        if (commandLine.hasOption('e')) {
+            config.setEpoll(true);
         }
         if (commandLine.hasOption("t")) {
             config.setBizThreads(Integer.parseInt(commandLine.getOptionValue("t")));

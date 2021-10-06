@@ -4,6 +4,7 @@ package simplerpc;
  * @author huangli
  */
 public class NettyTcpClientConfig {
+    private boolean epoll;
     private int maxPending = 1000;
     private long closeSilenceMillis = 2500;
     private long closeTimeoutMillis = 5000;
@@ -19,6 +20,14 @@ public class NettyTcpClientConfig {
     private int maxFrameSize = 2 * 1024 * 1024;
 
     private int maxIdleSeconds = 120;
+
+    public boolean isEpoll() {
+        return epoll;
+    }
+
+    public void setEpoll(boolean epoll) {
+        this.epoll = epoll;
+    }
 
     public int getMaxPending() {
         return maxPending;

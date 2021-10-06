@@ -23,6 +23,9 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -50,7 +53,7 @@ public class NettyTcpClient implements AutoCloseable {
     private int serverIndex;
 
     private volatile DefaultEventExecutorGroup workerLoop;
-    private volatile NioEventLoopGroup ioLoop;
+    private volatile EventLoopGroup ioLoop;
     private volatile Bootstrap bootstrap;
 
     private volatile int status = STATUS_INIT;
@@ -113,28 +116,17 @@ public class NettyTcpClient implements AutoCloseable {
     public void start() throws Exception {
         this.thread.start();
         this.bootstrap = new Bootstrap();
-        this.ioLoop = new NioEventLoopGroup(config.getIoLoopThread(), new ThreadFactory() {
-            private final AtomicInteger threadIndex = new AtomicInteger(0);
-
-            @Override
-            public Thread newThread(Runnable r) {
-                return new Thread(r, String.format("NettyClientIO_%d", this.threadIndex.incrementAndGet()));
-            }
-        });
+        if (config.isEpoll()) {
+            this.ioLoop = new EpollEventLoopGroup(config.getIoLoopThread(), new IndexThreadFactory("NettyClientIO"));
+        } else {
+            this.ioLoop = new NioEventLoopGroup(config.getIoLoopThread(), new IndexThreadFactory("NettyClientIO"));
+        }
         if (config.getWorkLoopThread() > 0) {
-            this.workerLoop = new DefaultEventExecutorGroup(config.getWorkLoopThread(),
-                    new ThreadFactory() {
-                        private final AtomicInteger threadIndex = new AtomicInteger(0);
-
-                        @Override
-                        public Thread newThread(Runnable r) {
-                            return new Thread(r, "NettyTcpClientWorker_" + this.threadIndex.getAndIncrement());
-                        }
-                    });
+            this.workerLoop = new DefaultEventExecutorGroup(config.getWorkLoopThread(), new IndexThreadFactory("NettyClientWorker"));
         }
 
 
-        this.bootstrap.group(this.ioLoop).channel(NioSocketChannel.class)
+        this.bootstrap.group(this.ioLoop).channel(config.isEpoll() ? EpollSocketChannel.class : NioSocketChannel.class)
                 .option(ChannelOption.TCP_NODELAY, true)
                 .option(ChannelOption.SO_KEEPALIVE, false)
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 3000)

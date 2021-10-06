@@ -8,6 +8,8 @@ public class NettyServerConfig {
 
     private byte[] handShakeBytes = Commands.HAND_SHAKE_BYTES;
 
+    private boolean epoll;
+
     private int autoBatchMode;
     private int maxBufferSize = 32 * 1024;
     private int maxBatchCount = 100;
@@ -88,5 +90,13 @@ public class NettyServerConfig {
 
     public void setHandShakeBytes(byte[] handShakeBytes) {
         this.handShakeBytes = handShakeBytes;
+    }
+
+    public boolean isEpoll() {
+        return epoll;
+    }
+
+    public void setEpoll(boolean epoll) {
+        this.epoll = epoll;
     }
 }
