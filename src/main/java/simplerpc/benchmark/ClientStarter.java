@@ -45,6 +45,9 @@ public class ClientStarter extends BenchBase {
             if (commandLine.hasOption("maxBatchSize")) {
                 c.setMaxBatchSize(Integer.parseInt(commandLine.getOptionValue("maxBatchSize")));
             }
+            if (commandLine.hasOption("maxPending")) {
+                c.setMaxPending(Integer.parseInt(commandLine.getOptionValue("maxPending")));
+            }
             client[i] = new NettyTcpClient(() -> Collections.singletonList(host + ":" + port), c);
             client[i].start();
         }
@@ -109,6 +112,7 @@ public class ClientStarter extends BenchBase {
         options.addOption("s", "sync", false, "sync mode");
         options.addOption(null, "autoBatchFactor", true, "autoBatchFactor");
         options.addOption(null, "maxBatchSize", true, "maxBatchSize");
+        options.addOption(null, "maxPending", true, "maxPending");
         options.addOption("l", "length", true, "message size");
 
         DefaultParser parser = new DefaultParser();

@@ -18,6 +18,8 @@ public class ServerStarter {
         options.addOption("p", "port", true, "port");
         options.addOption("m", "mode", true, "auto batch mode");
         options.addOption("t", "bizThreads", true, "biz thread count");
+        options.addOption(null, "maxBufferSize", true, "maxBufferSize");
+        options.addOption(null, "maxBatchCount", true, "maxBatchCount");
 
 
         DefaultParser parser = new DefaultParser();
@@ -38,6 +40,12 @@ public class ServerStarter {
         }
         if (commandLine.hasOption("t")) {
             config.setBizThreads(Integer.parseInt(commandLine.getOptionValue("t")));
+        }
+        if (commandLine.hasOption("maxBufferSize")) {
+            config.setMaxBufferSize(Integer.parseInt(commandLine.getOptionValue("maxBufferSize")));
+        }
+        if (commandLine.hasOption("maxBatchCount")) {
+            config.setMaxBatchCount(Integer.parseInt(commandLine.getOptionValue("maxBatchCount")));
         }
         NettyServer server = new NettyServer(config);
 
