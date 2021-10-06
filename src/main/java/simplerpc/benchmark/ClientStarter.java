@@ -109,13 +109,13 @@ public class ClientStarter extends BenchBase {
         options.addOption("s", "sync", false, "sync mode");
         options.addOption(null, "autoBatchFactor", true, "autoBatchFactor");
         options.addOption(null, "maxBatchSize", true, "maxBatchSize");
-        options.addOption("s", "size", true, "message size");
+        options.addOption("l", "length", true, "message size");
 
         DefaultParser parser = new DefaultParser();
         commandLine = parser.parse(options, args, true);
 
         sync = commandLine.hasOption('s');
-        if(commandLine.hasOption("s")){
+        if (commandLine.hasOption("s")) {
             byte[] b = new byte[Integer.parseInt(commandLine.getOptionValue("s"))];
             new Random().nextBytes(b);
             DATA = b;
