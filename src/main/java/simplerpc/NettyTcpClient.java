@@ -218,6 +218,7 @@ public class NettyTcpClient implements AutoCloseable {
 
     private static void notifyError(NettyTcpClientRequest request, Throwable ex) {
         if (request.getNotified().compareAndSet(false, true)) {
+            logger.info("error : {}", ex.toString());
             request.getClient().semaphore.release();
             request.getFuture().completeExceptionally(ex);
         }
@@ -431,7 +432,7 @@ public class NettyTcpClient implements AutoCloseable {
                             notifyError(request, e);
                         }
                     } else {
-                        logger.info("the request expired: {}", seqId);
+                        logger.debug("the request expired: {}", seqId);
                     }
                 } else {
                     // TODO 暂时没有支持server push
