@@ -7,9 +7,9 @@ import java.util.concurrent.atomic.LongAdder;
  * @author huangli
  * Created on 2021-09-14
  */
-public abstract class BenchBase implements Runnable {
+public abstract class BenchBase {
 
-    private final int threadCount;
+    protected final int threadCount;
     private final long time;
     private Thread[] threads;
     private volatile boolean stop = false;
@@ -31,7 +31,8 @@ public abstract class BenchBase implements Runnable {
         init();
         threads = new Thread[threadCount];
         for (int i = 0; i < threadCount; i++) {
-            threads[i] = new Thread(this);
+            int threadIndex = i;
+            threads[i] = new Thread(() -> run(threadIndex));
             threads[i].start();
         }
         Thread.sleep(time);
@@ -49,12 +50,11 @@ public abstract class BenchBase implements Runnable {
         System.out.println("fail count:" + count + ", ops=" + new DecimalFormat(",###").format(ops));
     }
 
-    @Override
-    public void run() {
+    public void run(int threadIndex) {
         while (!stop) {
-            test();
+            test(threadIndex);
         }
     }
 
-    public abstract void test();
+    public abstract void test(int threadIndex);
 }

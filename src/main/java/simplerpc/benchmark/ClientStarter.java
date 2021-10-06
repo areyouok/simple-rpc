@@ -64,45 +64,45 @@ public class ClientStarter extends BenchBase {
     }
 
     @Override
-    public void test() {
-        for (int i = 0; i < clientCount; i++) {
-            CompletableFuture<Void> fu = client[i].sendRequest(Commands.COMMAND_PING, new Callback<Void>() {
-                @Override
-                public void encode(ByteBuf out) {
-                    out.writeBytes(DATA);
-                }
+    public void test(int threadIndex) {
+        NettyTcpClient c = client[threadIndex % clientCount];
 
-                @Override
-                public Void decode(ByteBuf in) {
-                    short code = in.readShort();
-                    if (code != Commands.CODE_SUCCESS) {
-                        throw new RuntimeException();
-                    }
-                    byte[] bs = new byte[DATA.length];
-                    in.readBytes(bs);
-                    return null;
-                }
-            }, 10 * 1000);
-
-            if (sync) {
-                //同步调用
-                try {
-                    fu.get();
-                    successCount.add(1);
-                } catch (Exception e) {
-                    failCount.add(1);
-                }
-            } else {
-                // 异步调用
-                fu.handle((unused, throwable) -> {
-                    if (throwable != null) {
-                        failCount.add(1);
-                    } else {
-                        successCount.add(1);
-                    }
-                    return null;
-                });
+        CompletableFuture<Void> fu = c.sendRequest(Commands.COMMAND_PING, new Callback<Void>() {
+            @Override
+            public void encode(ByteBuf out) {
+                out.writeBytes(DATA);
             }
+
+            @Override
+            public Void decode(ByteBuf in) {
+                short code = in.readShort();
+                if (code != Commands.CODE_SUCCESS) {
+                    throw new RuntimeException();
+                }
+                byte[] bs = new byte[DATA.length];
+                in.readBytes(bs);
+                return null;
+            }
+        }, 10 * 1000);
+
+        if (sync) {
+            //同步调用
+            try {
+                fu.get();
+                successCount.add(1);
+            } catch (Exception e) {
+                failCount.add(1);
+            }
+        } else {
+            // 异步调用
+            fu.handle((unused, throwable) -> {
+                if (throwable != null) {
+                    failCount.add(1);
+                } else {
+                    successCount.add(1);
+                }
+                return null;
+            });
         }
     }
 

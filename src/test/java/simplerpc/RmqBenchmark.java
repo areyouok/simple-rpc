@@ -83,7 +83,7 @@ public class RmqBenchmark extends BenchBase {
     }
 
     @Override
-    public void test() {
+    public void test(int threadIndex) {
         RemotingCommand req = RemotingCommand.createRequestCommand(Commands.COMMAND_PING, new ReqHeader());
         req.setBody(data);
         try {

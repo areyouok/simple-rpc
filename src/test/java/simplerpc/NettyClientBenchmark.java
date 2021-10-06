@@ -51,7 +51,7 @@ public class NettyClientBenchmark extends BenchBase {
     }
 
     @Override
-    public void test() {
+    public void test(int threadIndex) {
         for (int i = 0; i < clientCount; i++) {
             CompletableFuture<Void> fu = client[i].sendRequest(Commands.COMMAND_PING, new Callback<Void>() {
                 @Override
