@@ -10,13 +10,13 @@ import java.util.concurrent.atomic.LongAdder;
 public abstract class BenchBase implements Runnable {
 
     private final int threadCount;
-    private final int time;
+    private final long time;
     private Thread[] threads;
     private volatile boolean stop = false;
     protected LongAdder successCount = new LongAdder();
     protected LongAdder failCount = new LongAdder();
 
-    public BenchBase(int threadCount, int time) {
+    public BenchBase(int threadCount, long time) {
         this.threadCount = threadCount;
         this.time = time;
     }
