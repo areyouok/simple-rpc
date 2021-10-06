@@ -16,6 +16,9 @@ import simplerpc.NettyTcpClientConfig;
  */
 public class ClientStarter extends BenchBase {
 
+    private static String host = "127.0.0.1";
+    private static int port = 12345;
+
     private final int clientCount = 1;
     private NettyTcpClient[] client;
     private final static byte[] DATA = "hello".getBytes(StandardCharsets.UTF_8);
@@ -29,7 +32,7 @@ public class ClientStarter extends BenchBase {
         client = new NettyTcpClient[clientCount];
         for (int i = 0; i < clientCount; i++) {
             NettyTcpClientConfig c = new NettyTcpClientConfig();
-            client[i] = new NettyTcpClient(() -> Collections.singletonList("127.0.0.1:12345"), c);
+            client[i] = new NettyTcpClient(() -> Collections.singletonList(host + ":" + port), c);
             client[i].start();
         }
     }
@@ -83,6 +86,10 @@ public class ClientStarter extends BenchBase {
     }
 
     public static void main(String[] args) throws Exception {
+        if (args.length == 2) {
+            host = args[0];
+            port = Integer.parseInt(args[1]);
+        }
         new ClientStarter(1, 10000).start();
     }
 }
