@@ -22,7 +22,7 @@ rocketmq批量操作可以在3个层面进行：业务用户层面、消息处�
 
 ## 测试方式和结果
 
-运行NettyClientBenchmark和RmqBenchmark的main方法可以得到测试结果。测试在Mac上（为了方便，以后应该到Linux上跨主机收集数据）运行，测试时间均为10秒。
+运行NettyClientBenchmark和RmqBenchmark的main方法可以得到测试结果。测试在Mac上运行，测试时间均为10秒。
 Simple RPC客户端自动批量阈值为200（所以同步发送的时候，线程数是否大于200，程序的逻辑会有差异）。
 
 客户端128线程
@@ -79,6 +79,9 @@ Simple RPC客户端自动批量阈值为200（所以同步发送的时候，线�
 | Simple RPC | 异步调用 | 默认 | 关闭 | 111,999 |
 | Simple RPC | 异步调用 | 使用IO线程处理请求 | 开启 | **1,528,428** |
 
+以上测试为了方便，是在Mac本机运行的。
+也在Linux上进行了测试（使用ServerStarter和ClientStarter），客户端和服务端分别位于两台不同的服务器，不调整任何参数的情况下tps是80万，调整一下参数可以上百万。
+
 ## 关于异步背压
 当rpc客户端（消息生产方）的异步调用速率大于响应速率（同时受服务器处理速率和网络速率的影响）的时候，客户端降低调用速率，使得tps自动适应最大响应速率，而不至于失败，这就是异步背压。
 
@@ -115,3 +118,11 @@ Simple RPC具有基本异步背压能力，核心要点是：
 2. 上面原因1的50000小于2的65535，结果是semaphore还有permit，但是1的Executor已经放不进去了；
 3. 客户端buffer明显大于服务端；
 4. 服务端超时1000ms小于客户端3000ms，客户端还愿意等，但服务端就清理掉了，不过这个osPageCacheBusy一般不容易触发，所以不常见；
+
+
+## TODO
+1. simple rpc需要更好的AUTO算法，更好的适应各种工况
+2. 当前的AutoBatchWriteHandler不能很好的向write操作的future的listener发出通知。
+3. simple rpc服务端和客户端最好具备简单的窗口机制。
+4. rocketmq测试的过程中多次出现"createChannel: connect remote host[127.0.0.1:8888] success, AbstractBootstrap$PendingRegistrationPromise@4f40e8cb(success)"，说明rocketmq在这里有一点并发问题
+5. 自动批量对于同步调用提升不那么大（除非线程很多），而rocketmq异步调用在大tps场景异步调用容易出错，需要做适当的改造以具备基本背压能力。
