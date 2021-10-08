@@ -12,7 +12,7 @@ public abstract class BenchBase {
     protected final int threadCount;
     private final long time;
     private Thread[] threads;
-    private volatile boolean stop = false;
+    protected volatile boolean stop = false;
     protected LongAdder successCount = new LongAdder();
     protected LongAdder failCount = new LongAdder();
 
