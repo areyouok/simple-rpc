@@ -283,12 +283,12 @@ public class NettyTcpClient implements AutoCloseable {
             setRequestId(request);
 
             if (true) {
-                ChannelFuture writeResult = channel.writeAndFlush(request);
                 NettyTcpClientRequest tmp = request;
                 while (tmp != null) {
                     waitForResponseMap.put(tmp.getSeqId(), tmp);
                     tmp = tmp.getNext();
                 }
+                ChannelFuture writeResult = channel.writeAndFlush(request);
                 Channel selectChannel = channel;
                 writeResult.addListener(future -> processWriteError(future, request, selectChannel));
             } else {
