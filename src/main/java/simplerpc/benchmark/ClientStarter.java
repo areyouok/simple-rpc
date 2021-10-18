@@ -39,8 +39,8 @@ public class ClientStarter extends BenchBase {
         int port = Integer.parseInt(commandLine.getOptionValue('p', "12345"));
         for (int i = 0; i < clientCount; i++) {
             NettyTcpClientConfig c = new NettyTcpClientConfig();
-            if (commandLine.hasOption("autoBatchFactor")) {
-                c.setAutoBatchFactor(Float.parseFloat(commandLine.getOptionValue("autoBatchFactor")));
+            if (commandLine.hasOption("autoBatchConcurrencyThreshold")) {
+                c.setAutoBatchConcurrencyThreshold(Integer.parseInt(commandLine.getOptionValue("autoBatchConcurrencyThreshold")));
             }
             if (commandLine.hasOption("maxBatchSize")) {
                 c.setMaxBatchSize(Integer.parseInt(commandLine.getOptionValue("maxBatchSize")));
@@ -114,7 +114,7 @@ public class ClientStarter extends BenchBase {
         options.addOption("d", "duration", true, "test time in millis");
         options.addOption("t", "thread", true, "thread count");
         options.addOption("s", "sync", false, "sync mode");
-        options.addOption(null, "autoBatchFactor", true, "autoBatchFactor");
+        options.addOption(null, "autoBatchConcurrencyThreshold", true, "autoBatchConcurrencyThreshold");
         options.addOption(null, "maxBatchSize", true, "maxBatchSize");
         options.addOption(null, "maxPending", true, "maxPending");
         options.addOption("l", "length", true, "message size");

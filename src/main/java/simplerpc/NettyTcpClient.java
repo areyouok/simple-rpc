@@ -171,11 +171,11 @@ public class NettyTcpClient implements AutoCloseable {
             if (status == STATUS_INIT) {
                 return errorFuture(new IOException("not start"));
             }
-            long deadLine = System.nanoTime() + timeoutMillis * 1000 * 1000;
+            long deadLine = System.nanoTime() + (timeoutMillis << 20);
             // 如果pending请求太多semaphore没有permit了，这个时候就会堵塞直到超时
             // 但由于发送方被堵塞，server处理很快的情况下permit会迅速释放，不会导致单次请求超时，这样实现了异步背压
             boolean acquire = this.semaphore.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS);
-            if (acquire && (deadLine - System.nanoTime() > 1000 * 1000)) {
+            if (acquire && (deadLine - System.nanoTime() > 1_000_000)) {
                 CompletableFuture<T> future = new CompletableFuture<>();
                 NettyTcpClientRequest request = new NettyTcpClientRequest(command, callback,
                         timeoutMillis, deadLine, future, this);
@@ -226,8 +226,7 @@ public class NettyTcpClient implements AutoCloseable {
 
     private void run() {
         final int maxBatchSize = config.getMaxBatchSize();
-        final int autoBatchConcurrencyThreshold = (int) (config.getMaxPending() * config.getAutoBatchFactor());
-        final int enableBatchPermits = config.getMaxPending() - autoBatchConcurrencyThreshold;
+        final int enableBatchPermits = config.getMaxPending() - config.getAutoBatchConcurrencyThreshold();
         final long maxBatchPendingNanos = config.getMaxAutoBatchPendingNanos();
         long totalRequest = 0;
         long totalBatch = 0;
@@ -238,7 +237,8 @@ public class NettyTcpClient implements AutoCloseable {
                     totalRequest++;
                     NettyTcpClientRequest current = request;
                     // 如果pending数超过阈值，就合并发送
-                    if (semaphore.availablePermits() < enableBatchPermits) {
+                    int restPermits = semaphore.availablePermits();
+                    if (restPermits < enableBatchPermits) {
                         long restTime = maxBatchPendingNanos;
                         for (int i = 0; i < maxBatchSize - 1; i++) {
                             if (restTime < 1) {
@@ -246,7 +246,6 @@ public class NettyTcpClient implements AutoCloseable {
                             }
                             long start = System.nanoTime();
                             NettyTcpClientRequest next = waitForWriteQueue.poll(restTime, TimeUnit.NANOSECONDS);
-                            restTime = restTime - (System.nanoTime() - start);
                             if (next != null) {
                                 totalRequest++;
                                 current.setNext(next);
@@ -254,6 +253,7 @@ public class NettyTcpClient implements AutoCloseable {
                             } else {
                                 break;
                             }
+                            restTime = restTime - (System.nanoTime() - start);
                         }
                     }
                     totalBatch++;
