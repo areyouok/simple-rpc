@@ -349,12 +349,13 @@ public class NettyTcpClient implements AutoCloseable {
     }
 
     private synchronized void closeChannel(Channel oldChannel) {
-        if (oldChannel != null && oldChannel == channelFuture.channel()) {
+        ChannelFuture cf = this.channelFuture;
+        if (oldChannel != null && cf != null && oldChannel == cf.channel()) {
+            channelFuture = null;
             if (oldChannel.isActive()) {
                 logger.info("closing channel {}", oldChannel);
                 oldChannel.close();
             }
-            channelFuture = null;
         }
     }
 
