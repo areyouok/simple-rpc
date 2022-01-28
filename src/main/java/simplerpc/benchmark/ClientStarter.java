@@ -125,8 +125,8 @@ public class ClientStarter extends BenchBase {
         commandLine = parser.parse(options, args, true);
 
         sync = commandLine.hasOption('s');
-        if (commandLine.hasOption("s")) {
-            byte[] b = new byte[Integer.parseInt(commandLine.getOptionValue("s"))];
+        if (commandLine.hasOption("l")) {
+            byte[] b = new byte[Integer.parseInt(commandLine.getOptionValue("l"))];
             new Random().nextBytes(b);
             DATA = b;
         }
