@@ -65,7 +65,7 @@ public class RmqClient extends BenchBase {
                 successCount.add(1);
             } else {
                 // 异步调用
-                c.invokeAsync("127.0.0.1:8888", req, 3000, responseFuture -> {
+                c.invokeAsync(remoteAddr, req, 3000, responseFuture -> {
                     if (responseFuture.isSendRequestOK()) {
                         successCount.add(1);
                     } else {
