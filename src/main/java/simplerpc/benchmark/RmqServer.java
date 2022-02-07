@@ -1,5 +1,6 @@
 package simplerpc.benchmark;
 
+import java.util.Random;
 import java.util.concurrent.Executors;
 
 import org.apache.commons.cli.CommandLine;
@@ -36,10 +37,18 @@ public class RmqServer {
     public static void main(String[] args) throws Exception {
         Options options = new Options();
         options.addOption("p", "port", true, "port");
+        options.addOption("l", "length", true, "message size");
 
 
         DefaultParser parser = new DefaultParser();
         CommandLine commandLine = parser.parse(options, args, true);
+        final byte[] DATA;
+        if (commandLine.hasOption("l")) {
+            DATA = new byte[Integer.parseInt(commandLine.getOptionValue("l"))];
+            new Random().nextBytes(DATA);
+        } else {
+            DATA = null;
+        }
 
         NettyServerConfig config = new NettyServerConfig();
         config.setListenPort(Integer.parseInt(commandLine.getOptionValue("p", "12345")));
@@ -51,7 +60,11 @@ public class RmqServer {
                     request.decodeCommandCustomHeader(ReqHeader.class);
                     RemotingCommand resp =
                             RemotingCommand.createResponseCommand(Commands.COMMAND_PING, null, RespHeader.class);
-                    resp.setBody(request.getBody());
+                    if (DATA == null) {
+                        resp.setBody(request.getBody());
+                    } else {
+                        resp.setBody(DATA);
+                    }
 
                     // 如果在这里睡1ms，rocketmq remoting异步调用将会失败，因为没有背压能力
                     // Thread.sleep(1);
