@@ -9,9 +9,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import io.netty.bootstrap.Bootstrap;
@@ -69,6 +67,8 @@ public class NettyTcpClient implements AutoCloseable {
 
     private final Thread thread;
     private long lastCleanTimeNano = System.nanoTime();
+
+    private final CompletableFuture<Void> closeFuture = new CompletableFuture<>();
 
     public interface Callback<T> {
 
@@ -232,7 +232,13 @@ public class NettyTcpClient implements AutoCloseable {
         long totalBatch = 0;
         while (status <= STATUS_STOPPING) {
             try {
-                NettyTcpClientRequest request = waitForWriteQueue.poll(1, TimeUnit.SECONDS);
+                NettyTcpClientRequest request;
+                if (status < STATUS_STOPPING) {
+                    request = waitForWriteQueue.poll(1, TimeUnit.SECONDS);
+                } else {
+                    request = waitForWriteQueue.poll();
+                }
+
                 if (request != null) {
                     totalRequest++;
                     NettyTcpClientRequest current = request;
@@ -245,7 +251,12 @@ public class NettyTcpClient implements AutoCloseable {
                                 break;
                             }
                             long start = System.nanoTime();
-                            NettyTcpClientRequest next = waitForWriteQueue.poll(restTime, TimeUnit.NANOSECONDS);
+                            NettyTcpClientRequest next;
+                            if (status < STATUS_STOPPING) {
+                                next = waitForWriteQueue.poll(restTime, TimeUnit.NANOSECONDS);
+                            } else {
+                                next = waitForWriteQueue.poll();
+                            }
                             if (next != null) {
                                 totalRequest++;
                                 current.setNext(next);
@@ -258,7 +269,7 @@ public class NettyTcpClient implements AutoCloseable {
                     }
                     totalBatch++;
                     sendRequest0(channelFuture, request);
-                } else if (status == STATUS_STOPPING) {
+                } else if (status >= STATUS_STOPPING) {
                     break;
                 }
                 cleanExpireRequest();
@@ -267,6 +278,7 @@ public class NettyTcpClient implements AutoCloseable {
             }
         }
         logger.debug("client socket write thread finished. avg batch size is " + 1.0 * totalRequest / totalBatch);
+        doClose();
     }
 
     private void sendRequest0(ChannelFuture currentChannelFuture, NettyTcpClientRequest request) {
@@ -364,16 +376,16 @@ public class NettyTcpClient implements AutoCloseable {
         if (this.status >= STATUS_STOPPING) {
             return;
         }
+        this.status = STATUS_STOPPING;
+        logger.info("netty tcp client closing: begin shutdown");
+        this.thread.interrupt();
+    }
+
+    private void doClose() {
         long deadline = System.nanoTime() + config.getCloseTimeoutMillis() * 1000 * 1000;
         try {
-            logger.debug("netty tcp client closing: begin shutdown");
-            this.status = STATUS_STOPPING;
-            this.thread.interrupt();
-            this.thread.join(config.getCloseSilenceMillis());
-
             logger.debug("netty tcp client closing: clean waitForWriteQueue ...");
             waitForWriteQueue.forEach(c -> notifyError(c, new IOException("closed")));
-
 
             while (!waitForResponseMap.isEmpty()) {
                 Thread.sleep(10);
@@ -382,6 +394,9 @@ public class NettyTcpClient implements AutoCloseable {
                     break;
                 }
             }
+
+            logger.debug("netty tcp client closing: clean waitForResponseMap ...");
+            waitForResponseMap.values().forEach(c -> notifyError(c, new IOException("closed")));
 
             logger.debug("netty tcp client closing: shutdown event loop ...");
             Future<?> f1 = this.ioLoop.shutdownGracefully(config.getCloseSilenceMillis(),
@@ -397,12 +412,10 @@ public class NettyTcpClient implements AutoCloseable {
                 f2.sync();
             }
 
-            logger.debug("netty tcp client closing: clean waitForResponseMap ...");
-            waitForResponseMap.values().forEach(c -> notifyError(c, new IOException("closed")));
-
-            logger.debug("netty tcp client closing: finish shutdown");
-        } catch (InterruptedException e) {
-            // ignore
+            logger.info("netty tcp client closing: finish shutdown");
+            closeFuture.complete(null);
+        } catch (Throwable e) {
+            closeFuture.completeExceptionally(e);
         }
         this.status = STATUS_STOPPED;
     }

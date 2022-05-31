@@ -7,7 +7,7 @@ public class NettyTcpClientConfig {
     private boolean epoll;
     private int maxPending = 1000;
     private int autoBatchConcurrencyThreshold = 200;
-    private long closeSilenceMillis = 2500;
+    private long closeSilenceMillis = 1000;
     private long closeTimeoutMillis = 5000;
     private byte[] handShakeBytes = Commands.HAND_SHAKE_BYTES;
 

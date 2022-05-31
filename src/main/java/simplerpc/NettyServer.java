@@ -1,7 +1,6 @@
 package simplerpc;
 
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -117,9 +116,12 @@ public class NettyServer {
     public void shutdown() {
         try {
             this.eventLoopGroupBoss.shutdownGracefully();
+            this.eventLoopGroupBoss.awaitTermination(1000, TimeUnit.MILLISECONDS);
             this.eventLoopGroupSelector.shutdownGracefully();
+            this.eventLoopGroupSelector.awaitTermination(1000, TimeUnit.MILLISECONDS);
             if (bizExecutorGroup != null) {
                 this.bizExecutorGroup.shutdownGracefully();
+                this.bizExecutorGroup.awaitTermination(1000, TimeUnit.MILLISECONDS);
             }
         } catch (Exception e) {
             logger.error("NettyRemotingServer shutdown exception, ", e);
