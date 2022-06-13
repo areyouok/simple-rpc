@@ -85,6 +85,10 @@ public class NettyTcpClient implements AutoCloseable {
         this.thread = new Thread(this::run);
     }
 
+    public CompletableFuture<Void> getCloseFuture() {
+        return closeFuture;
+    }
+
     private Channel connect() throws InterruptedException, IOException {
         List<String> serversCopy = new ArrayList<>(servers.get());
         String[] serverAndPort = serversCopy.get(serverIndex).split(":");
@@ -388,10 +392,14 @@ public class NettyTcpClient implements AutoCloseable {
             waitForWriteQueue.forEach(c -> notifyError(c, new IOException("closed")));
 
             while (!waitForResponseMap.isEmpty()) {
-                Thread.sleep(10);
                 doCleanExpireData(System.nanoTime());
                 if (System.nanoTime() > deadline) {
                     break;
+                }
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    //ignore
                 }
             }
 
@@ -415,6 +423,7 @@ public class NettyTcpClient implements AutoCloseable {
             logger.info("netty tcp client closing: finish shutdown");
             closeFuture.complete(null);
         } catch (Throwable e) {
+            logger.warn("netty tcp client close fail: {}", e.toString());
             closeFuture.completeExceptionally(e);
         }
         this.status = STATUS_STOPPED;
