@@ -10,15 +10,21 @@ import java.util.concurrent.atomic.LongAdder;
 public abstract class BenchBase {
 
     protected final int threadCount;
-    private final long time;
+    private final long testTime;
+    private final long warmupTime;
     private Thread[] threads;
     protected volatile boolean stop = false;
     protected LongAdder successCount = new LongAdder();
     protected LongAdder failCount = new LongAdder();
 
-    public BenchBase(int threadCount, long time) {
+    public BenchBase(int threadCount, long testTime) {
+        this(threadCount, testTime, 5000);
+    }
+
+    public BenchBase(int threadCount, long testTime, long warmupTime) {
         this.threadCount = threadCount;
-        this.time = time;
+        this.testTime = testTime;
+        this.warmupTime = warmupTime;
     }
 
     public void init() throws Exception {
@@ -35,19 +41,23 @@ public abstract class BenchBase {
             threads[i] = new Thread(() -> run(threadIndex));
             threads[i].start();
         }
-        Thread.sleep(time);
+        Thread.sleep(warmupTime);
+        long warmupCount = successCount.sum();
+        long warmupFailCount = failCount.sum();
+        Thread.sleep(testTime);
         stop = true;
+        long sc = successCount.sum() - warmupCount;
+        long fc = failCount.sum() - warmupFailCount;
         for (Thread t : threads) {
             t.join();
         }
         shutdown();
-        long count = successCount.sum();
-        double ops = count * 1.0 / time * 1000;
-        System.out.println("success count:" + count + ", ops=" + new DecimalFormat(",###").format(ops));
 
-        count = failCount.sum();
-        ops = count * 1.0 / time * 1000;
-        System.out.println("fail count:" + count + ", ops=" + new DecimalFormat(",###").format(ops));
+        double ops = sc * 1.0 / testTime * 1000;
+        System.out.println("success sc:" + sc + ", ops=" + new DecimalFormat(",###").format(ops));
+
+        ops = fc * 1.0 / testTime * 1000;
+        System.out.println("fail sc:" + fc + ", ops=" + new DecimalFormat(",###").format(ops));
     }
 
     public void run(int threadIndex) {
